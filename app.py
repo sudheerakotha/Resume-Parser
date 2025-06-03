@@ -126,11 +126,16 @@ def extract_details(text):
         # If not a new section header, and we are currently in a section, add the line to it
         if not found_new_section and current_section_name:
             if current_section_name == "Skills":
-                # Special handling for skills: split by common delimiters and bullet points
-                # This regex splits by spaces, unicode bullet (•), comma, and semicolon
-                skill_items = re.split(r'[\s\u2022,\;]+', line.replace('•', '').strip())
-                # Filter out any empty strings resulting from the split and add to skills list
-                current_section_data[current_section_name].extend([s.strip() for s in skill_items if s.strip()])
+                # Special handling for skills: remove common bullet points and extra whitespace
+                cleaned_skill_line = line.replace('•', '').replace('-', '').strip()
+                if cleaned_skill_line:
+                    # If the line contains commas, assume it's a comma-separated list of skills
+                    if ',' in cleaned_skill_line:
+                        skill_items = [s.strip() for s in cleaned_skill_line.split(',') if s.strip()]
+                        current_section_data[current_section_name].extend(skill_items)
+                    # Otherwise, treat the entire cleaned line as a single skill
+                    else:
+                        current_section_data[current_section_name].append(cleaned_skill_line)
             else:
                 # For other sections, just append the line
                 current_section_data[current_section_name].append(line)
