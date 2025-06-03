@@ -224,47 +224,82 @@ def compare_resumes(details1, details2):
     """
     st.subheader("📊 Resume Comparison Results:")
 
-    col1, col2, col3 = st.columns([1, 4, 4]) # Smaller column for category, then two equal columns for resumes
-
-    with col2:
+    # Display names at the top
+    col_name1, col_name2 = st.columns(2)
+    with col_name1:
         st.markdown(f"**Resume 1: {details1.get('Name', 'Unnamed Resume 1')}**")
-    with col3:
+    with col_name2:
         st.markdown(f"**Resume 2: {details2.get('Name', 'Unnamed Resume 2')}**")
 
-    # Only compare these specific categories
-    comparison_categories = {
-        "Skills": lambda d: d.get("Skills", "Not found").split(', ') if d.get("Skills") != "Not found" else ["Not found"],
-        "Professional Experience": lambda d: d.get("Professional Experience", "Not found").split('\n') if d.get("Professional Experience") != "Not found" else ["Not found"],
-        "Projects": lambda d: d.get("Projects", "Not found").split('\n') if d.get("Projects") != "Not found" else ["Not found"],
-        "Position of Responsibility": lambda d: d.get("Position of Responsibility", "Not found").split('\n') if d.get("Position of Responsibility") != "Not found" else ["Not found"]
+    st.markdown("---") # Separator after names
+
+    # Specific categories for side-by-side comparison
+    comparison_categories_detailed = {
+        "Skills": lambda d: set(s.strip() for s in d.get("Skills", "").split(', ') if s.strip() and s.strip() != "Not found"),
+        "Professional Experience": lambda d: [line.strip() for line in d.get("Professional Experience", "").split('\n') if line.strip()],
+        "Projects": lambda d: [line.strip() for line in d.get("Projects", "").split('\n') if line.strip()],
+        "Position of Responsibility": lambda d: [line.strip() for line in d.get("Position of Responsibility", "").split('\n') if line.strip()]
     }
 
-    for category, get_value_func in comparison_categories.items():
-        val1 = get_value_func(details1)
-        val2 = get_value_func(details2)
+    # Create columns for the comparison table
+    # Using st.columns within the loop for each row to ensure proper alignment
+    for category_name, get_items_func in comparison_categories_detailed.items():
+        items1 = get_items_func(details1)
+        items2 = get_items_func(details2)
 
-        with col1:
-            st.markdown(f"**{category}:**")
-        with col2:
-            if isinstance(val1, list):
-                if val1 == ["Not found"]:
-                    st.markdown("Not found")
-                else:
-                    for item in val1:
-                        if item.strip():
-                            st.markdown(f"- {item.strip()}")
+        st.markdown(f"**{category_name}:**") # Category header above the comparison rows
+
+        if category_name == "Skills":
+            all_unique_items = sorted(list(items1.union(items2)))
+            if not all_unique_items:
+                col_cat, col_res1, col_res2 = st.columns([1, 4, 4])
+                with col_cat:
+                    st.markdown("") # Empty for alignment
+                with col_res1:
+                    st.markdown("-")
+                with col_res2:
+                    st.markdown("-")
             else:
-                st.markdown(val1)
-        with col3:
-            if isinstance(val2, list):
-                if val2 == ["Not found"]:
-                    st.markdown("Not found")
-                else:
-                    for item in val2:
-                        if item.strip():
-                            st.markdown(f"- {item.strip()}")
+                for item in all_unique_items:
+                    col_cat, col_res1, col_res2 = st.columns([1, 4, 4])
+                    with col_cat:
+                        st.markdown("") # Empty for alignment
+                    with col_res1:
+                        st.markdown(f"- {item}" if item in items1 else "-")
+                    with col_res2:
+                        st.markdown(f"- {item}" if item in items2 else "-")
+        else: # For Professional Experience, Projects, Position of Responsibility
+            # Determine the maximum number of bullet points to display
+            max_lines = max(len(items1), len(items2))
+            
+            if max_lines == 0: # Handle case where both are empty
+                col_cat, col_res1, col_res2 = st.columns([1, 4, 4])
+                with col_cat:
+                    st.markdown("") # Empty for alignment
+                with col_res1:
+                    st.markdown("-")
+                with col_res2:
+                    st.markdown("-")
             else:
-                st.markdown(val2)
+                # Pad the shorter list with empty strings for alignment
+                padded_items1 = items1 + [''] * (max_lines - len(items1))
+                padded_items2 = items2 + [''] * (max_lines - len(items2))
+
+                for i in range(max_lines):
+                    col_cat, col_res1, col_res2 = st.columns([1, 4, 4])
+                    with col_cat:
+                        st.markdown("") # Empty for alignment
+                    with col_res1:
+                        if padded_items1[i]:
+                            st.markdown(f"- {padded_items1[i]}")
+                        else:
+                            st.markdown("-") # Indicate absence with a hyphen
+                    with col_res2:
+                        if padded_items2[i]:
+                            st.markdown(f"- {padded_items2[i]}")
+                        else:
+                            st.markdown("-") # Indicate absence with a hyphen
+        
         st.markdown("---") # Separator for each category
 
     # Calculate and display overall ATS scores
@@ -369,16 +404,7 @@ elif app_mode == "Compare Resumes":
 
     st.markdown("---")
     if details1 and details2:
-        # Display extracted details side-by-side before comparison notes
-        st.subheader("Extracted Details for Comparison:")
-        col_det1, col_det2 = st.columns(2)
-        with col_det1:
-            display_extracted_details(details1, title="Resume 1 Details")
-        with col_det2:
-            display_extracted_details(details2, title="Resume 2 Details")
-        
-        st.markdown("---") # Separator before comparison button
-
+        # The comparison will be displayed only after the button is clicked
         if st.button("Compare Resumes"):
             compare_resumes(details1, details2)
     elif uploaded_file1 or uploaded_file2:
