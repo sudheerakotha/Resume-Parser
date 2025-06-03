@@ -161,7 +161,7 @@ def display_extracted_details(details, title="Extracted Resume Details"):
     """
     Displays the extracted resume details in a formatted way.
     """
-    st.subheader(f"� {title}:")
+    st.subheader(f"📋 {title}:")
     for key, value in details.items():
         st.markdown(f"**{key}:**") # Always display the key as a header
         if key in ["Profile", "Professional Experience", "Education", "Projects", "Position of Responsibility"]:
@@ -280,12 +280,12 @@ def compare_resumes(details1, details2):
                 if padded_items1[i]:
                     st.markdown(f"- {padded_items1[i]}")
                 else:
-                    st.markdown("-") # Indicate absence with a hyphen
+                    st.markdown("") # Leave blank if no item
             with col_res2:
                 if padded_items2[i]:
                     st.markdown(f"- {padded_items2[i]}")
                 else:
-                    st.markdown("-") # Indicate absence with a hyphen
+                    st.markdown("") # Leave blank if no item
         
         st.markdown("---") # Separator for each category
 
@@ -373,6 +373,8 @@ elif app_mode == "Compare Resumes":
                 st.error("Unsupported file format for Resume 1. Please upload a .pdf or .docx file.")
                 st.stop()
             details1 = extract_details(text1)
+            # Display extracted details for Resume 1 immediately after upload
+            display_extracted_details(details1, title="Extracted Details (Resume 1)")
 
     # Resume 2 upload
     with col2:
@@ -388,6 +390,8 @@ elif app_mode == "Compare Resumes":
                 st.error("Unsupported file format for Resume 2. Please upload a .pdf or .docx file.")
                 st.stop()
             details2 = extract_details(text2)
+            # Display extracted details for Resume 2 immediately after upload
+            display_extracted_details(details2, title="Extracted Details (Resume 2)")
 
     st.markdown("---")
     if details1 and details2:
