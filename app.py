@@ -180,4 +180,4 @@ if uploaded_file is not None:
         st.markdown(f"**{key}:** {value}")
 
     st.markdown("---")
-    st.info("You can upload another resume to re-analyze.")
+    st.info("You can upload another resume to analyze again.")
