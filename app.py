@@ -231,14 +231,10 @@ def compare_resumes(details1, details2):
     with col3:
         st.markdown(f"**Resume 2: {details2.get('Name', 'Unnamed Resume 2')}**")
 
+    # Only compare these specific categories
     comparison_categories = {
-        "Name": lambda d: d.get("Name", "Not found"),
-        "Email": lambda d: d.get("Email", "Not found"),
-        "Phone": lambda d: d.get("Phone", "Not found"),
-        "Profile": lambda d: d.get("Profile", "Not found").split('\n') if d.get("Profile") != "Not found" else ["Not found"],
-        "Professional Experience": lambda d: d.get("Professional Experience", "Not found").split('\n') if d.get("Professional Experience") != "Not found" else ["Not found"],
-        "Education": lambda d: d.get("Education", "Not found").split('\n') if d.get("Education") != "Not found" else ["Not found"],
         "Skills": lambda d: d.get("Skills", "Not found").split(', ') if d.get("Skills") != "Not found" else ["Not found"],
+        "Professional Experience": lambda d: d.get("Professional Experience", "Not found").split('\n') if d.get("Professional Experience") != "Not found" else ["Not found"],
         "Projects": lambda d: d.get("Projects", "Not found").split('\n') if d.get("Projects") != "Not found" else ["Not found"],
         "Position of Responsibility": lambda d: d.get("Position of Responsibility", "Not found").split('\n') if d.get("Position of Responsibility") != "Not found" else ["Not found"]
     }
