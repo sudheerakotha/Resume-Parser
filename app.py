@@ -168,66 +168,127 @@ def display_extracted_details(details, title="Extracted Resume Details"):
             st.markdown(value)
 
 
-def compare_resumes(details1, details2):
+def calculate_resume_score(details):
     """
-    Compares two resumes based on extracted details and provides a basic rating.
+    Calculates a numerical score for a resume based on its extracted details.
+    Score is out of 10. This can be considered a basic ATS compatibility score.
     """
-    score1 = 0
-    score2 = 0
-    comparison_notes = []
+    score = 0
+    # Max possible score for each criterion
+    MAX_SECTIONS_SCORE = 3 # Profile, Experience, Education, Skills, Projects, Responsibility (6 sections) -> 0.5 each
+    MAX_EXPERIENCE_SCORE = 3 # Based on lines of experience
+    MAX_SKILLS_SCORE = 2 # Based on number of skills
+    MAX_PROJECTS_SCORE = 2 # Based on number of projects
 
-    # Criteria 1: Completeness of sections
+    # Criteria 1: Completeness of sections (max 3 points)
+    sections_found = 0
     sections_to_check = ["Profile", "Professional Experience", "Education", "Skills", "Projects", "Position of Responsibility"]
     for section in sections_to_check:
-        if details1.get(section) != "Not found":
-            score1 += 1
-        if details2.get(section) != "Not found":
-            score2 += 1
-    
-    if score1 > score2:
-        comparison_notes.append(f"Resume 1 seems more complete with {score1} key sections found, compared to Resume 2 with {score2}.")
-    elif score2 > score1:
-        comparison_notes.append(f"Resume 2 seems more complete with {score2} key sections found, compared to Resume 1 with {score1}.")
-    else:
-        comparison_notes.append(f"Both resumes have a similar number of key sections ({score1}).")
+        if details.get(section) != "Not found" and details.get(section).strip() != "":
+            sections_found += 1
+    score += (sections_found / len(sections_to_check)) * MAX_SECTIONS_SCORE
 
-    # Criteria 2: Length of Professional Experience
-    exp1_lines = len(details1.get("Professional Experience", "").split('\n')) if details1.get("Professional Experience") != "Not found" else 0
-    exp2_lines = len(details2.get("Professional Experience", "").split('\n')) if details2.get("Professional Experience") != "Not found" else 0
+    # Criteria 2: Length of Professional Experience (max 3 points)
+    exp_lines = len(details.get("Professional Experience", "").split('\n')) if details.get("Professional Experience") != "Not found" else 0
+    # Simple scaling: 0-2 lines = 0, 3-5 lines = 1, 6-9 lines = 2, 10+ lines = 3
+    if exp_lines >= 10:
+        score += MAX_EXPERIENCE_SCORE
+    elif exp_lines >= 6:
+        score += 2
+    elif exp_lines >= 3:
+        score += 1
 
-    if exp1_lines > exp2_lines:
-        score1 += 2 # Give more weight to experience
-        comparison_notes.append(f"Resume 1 has a more detailed Professional Experience section ({exp1_lines} lines) than Resume 2 ({exp2_lines} lines).")
-    elif exp2_lines > exp1_lines:
-        score2 += 2
-        comparison_notes.append(f"Resume 2 has a more detailed Professional Experience section ({exp2_lines} lines) than Resume 1 ({exp1_lines} lines).")
-    else:
-        comparison_notes.append("Both resumes have similar length Professional Experience sections.")
+    # Criteria 3: Number of Skills (max 2 points)
+    skills_count = len(details.get("Skills", "").split(',')) if details.get("Skills") != "Not found" else 0
+    # Simple scaling: 0-5 skills = 0, 6-10 skills = 1, 11+ skills = 2
+    if skills_count >= 11:
+        score += MAX_SKILLS_SCORE
+    elif skills_count >= 6:
+        score += 1
 
-    # Criteria 3: Number of Skills
-    skills1_count = len(details1.get("Skills", "").split(',')) if details1.get("Skills") != "Not found" else 0
-    skills2_count = len(details2.get("Skills", "").split(',')) if details2.get("Skills") != "Not found" else 0
+    # Criteria 4: Number of Projects (max 2 points)
+    projects_lines = len(details.get("Projects", "").split('\n')) if details.get("Projects") != "Not found" else 0
+    # Simple scaling: 0 projects = 0, 1-2 projects = 1, 3+ projects = 2
+    if projects_lines >= 3:
+        score += MAX_PROJECTS_SCORE
+    elif projects_lines >= 1:
+        score += 1
 
-    if skills1_count > skills2_count:
-        score1 += 1
-        comparison_notes.append(f"Resume 1 lists more skills ({skills1_count}) than Resume 2 ({skills2_count}).")
-    elif skills2_count > skills1_count:
-        score2 += 1
-        comparison_notes.append(f"Resume 2 lists more skills ({skills2_count}) than Resume 1 ({skills1_count}).")
-    else:
-        comparison_notes.append("Both resumes list a similar number of skills.")
+    return round(score, 1) # Round to one decimal place
 
+
+def compare_resumes(details1, details2):
+    """
+    Compares two resumes based on extracted details and provides a side-by-side comparison
+    and a rating out of 10.
+    """
     st.subheader("📊 Resume Comparison Results:")
-    for note in comparison_notes:
-        st.info(note)
+
+    col1, col2, col3 = st.columns([1, 4, 4]) # Smaller column for category, then two equal columns for resumes
+
+    with col2:
+        st.markdown(f"**Resume 1: {details1.get('Name', 'Unnamed Resume 1')}**")
+    with col3:
+        st.markdown(f"**Resume 2: {details2.get('Name', 'Unnamed Resume 2')}**")
+
+    comparison_categories = {
+        "Name": lambda d: d.get("Name", "Not found"),
+        "Email": lambda d: d.get("Email", "Not found"),
+        "Phone": lambda d: d.get("Phone", "Not found"),
+        "Profile": lambda d: d.get("Profile", "Not found").split('\n') if d.get("Profile") != "Not found" else ["Not found"],
+        "Professional Experience": lambda d: d.get("Professional Experience", "Not found").split('\n') if d.get("Professional Experience") != "Not found" else ["Not found"],
+        "Education": lambda d: d.get("Education", "Not found").split('\n') if d.get("Education") != "Not found" else ["Not found"],
+        "Skills": lambda d: d.get("Skills", "Not found").split(', ') if d.get("Skills") != "Not found" else ["Not found"],
+        "Projects": lambda d: d.get("Projects", "Not found").split('\n') if d.get("Projects") != "Not found" else ["Not found"],
+        "Position of Responsibility": lambda d: d.get("Position of Responsibility", "Not found").split('\n') if d.get("Position of Responsibility") != "Not found" else ["Not found"]
+    }
+
+    for category, get_value_func in comparison_categories.items():
+        val1 = get_value_func(details1)
+        val2 = get_value_func(details2)
+
+        with col1:
+            st.markdown(f"**{category}:**")
+        with col2:
+            if isinstance(val1, list):
+                if val1 == ["Not found"]:
+                    st.markdown("Not found")
+                else:
+                    for item in val1:
+                        if item.strip():
+                            st.markdown(f"- {item.strip()}")
+            else:
+                st.markdown(val1)
+        with col3:
+            if isinstance(val2, list):
+                if val2 == ["Not found"]:
+                    st.markdown("Not found")
+                else:
+                    for item in val2:
+                        if item.strip():
+                            st.markdown(f"- {item.strip()}")
+            else:
+                st.markdown(val2)
+        st.markdown("---") # Separator for each category
+
+    # Calculate and display overall ATS scores
+    ats_score1 = calculate_resume_score(details1)
+    ats_score2 = calculate_resume_score(details2)
+
+    st.markdown("### ATS Score (Out of 10):")
+    rating_col1, rating_col2 = st.columns(2)
+    with rating_col1:
+        st.metric(label=f"**{details1.get('Name', 'Resume 1')} ATS Score**", value=f"{ats_score1}/10")
+    with rating_col2:
+        st.metric(label=f"**{details2.get('Name', 'Resume 2')} ATS Score**", value=f"{ats_score2}/10")
 
     st.markdown("---")
-    if score1 > score2:
-        st.success(f"**Overall, Resume 1 ({details1.get('Name', 'Unnamed Resume 1')}) appears to be stronger.**")
-    elif score2 > score1:
-        st.success(f"**Overall, Resume 2 ({details2.get('Name', 'Unnamed Resume 2')}) appears to be stronger.**")
+    if ats_score1 > ats_score2:
+        st.success(f"**Overall, Resume 1 ({details1.get('Name', 'Unnamed Resume 1')}) appears to be stronger based on the scoring criteria.**")
+    elif ats_score2 > ats_score1:
+        st.success(f"**Overall, Resume 2 ({details2.get('Name', 'Unnamed Resume 2')}) appears to be stronger based on the scoring criteria.**")
     else:
-        st.info("**Both resumes appear to be of similar strength based on the current criteria.**")
+        st.info("**Both resumes appear to be of similar strength based on the current scoring criteria.**")
 
 
 # ----------------------------
@@ -264,6 +325,13 @@ if app_mode == "Parse Single Resume":
         details = extract_details(text)
         display_extracted_details(details)
 
+        # Display ATS Score for single resume
+        ats_score = calculate_resume_score(details)
+        st.markdown("---")
+        st.subheader("🎯 ATS Score:")
+        st.metric(label=f"**{details.get('Name', 'Your Resume')} ATS Score**", value=f"{ats_score}/10")
+
+
         st.markdown("---")
         st.info("You can upload another resume to re-analyze.")
 
@@ -287,7 +355,6 @@ elif app_mode == "Compare Resumes":
                 st.error("Unsupported file format for Resume 1. Please upload a .pdf or .docx file.")
                 st.stop()
             details1 = extract_details(text1)
-            display_extracted_details(details1, title="Extracted Details (Resume 1)")
 
     # Resume 2 upload
     with col2:
@@ -303,10 +370,19 @@ elif app_mode == "Compare Resumes":
                 st.error("Unsupported file format for Resume 2. Please upload a .pdf or .docx file.")
                 st.stop()
             details2 = extract_details(text2)
-            display_extracted_details(details2, title="Extracted Details (Resume 2)")
 
     st.markdown("---")
     if details1 and details2:
+        # Display extracted details side-by-side before comparison notes
+        st.subheader("Extracted Details for Comparison:")
+        col_det1, col_det2 = st.columns(2)
+        with col_det1:
+            display_extracted_details(details1, title="Resume 1 Details")
+        with col_det2:
+            display_extracted_details(details2, title="Resume 2 Details")
+        
+        st.markdown("---") # Separator before comparison button
+
         if st.button("Compare Resumes"):
             compare_resumes(details1, details2)
     elif uploaded_file1 or uploaded_file2:
