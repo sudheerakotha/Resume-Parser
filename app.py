@@ -63,7 +63,7 @@ def extract_details(text):
         "Profile": "Not found",
         "Professional Experience": "Not found",
         "Education": "Not found",
-        "Skills": "Not found",
+        "Skills": "Not found", # Skills will now be a list
         "Projects": "Not found",
         "Position of Responsibility": "Not found"
     }
@@ -129,23 +129,27 @@ def extract_details(text):
                 # Special handling for skills: remove common bullet points and extra whitespace
                 cleaned_skill_line = line.replace('•', '').replace('-', '').strip()
                 if cleaned_skill_line:
-                    # If the line contains commas, assume it's a comma-separated list of skills
-                    if ',' in cleaned_skill_line:
+                    # Attempt to split by common skill separators (comma or semicolon)
+                    # If multiple skills are on one line separated by these, split them.
+                    # Otherwise, treat the whole cleaned line as a single skill.
+                    if ';' in cleaned_skill_line:
+                        skill_items = [s.strip() for s in cleaned_skill_line.split(';') if s.strip()]
+                        current_section_data[current_section_name].extend(skill_items)
+                    elif ',' in cleaned_skill_line:
                         skill_items = [s.strip() for s in cleaned_skill_line.split(',') if s.strip()]
                         current_section_data[current_section_name].extend(skill_items)
-                    # Otherwise, treat the entire cleaned line as a single skill
                     else:
                         current_section_data[current_section_name].append(cleaned_skill_line)
             else:
                 # For other sections, just append the line
                 current_section_data[current_section_name].append(line)
 
-    # Join the lists of lines into single strings for the final output dictionary
+    # Finalize details dictionary
     for key, value_list in current_section_data.items():
         if value_list:
             if key == "Skills":
-                # Ensure unique skills and join them with ", "
-                details[key] = ", ".join(sorted(list(set(value_list))))
+                # Store skills as a list of unique items
+                details[key] = sorted(list(set(value_list)))
             else:
                 # Join other sections with newlines
                 details[key] = "\n".join(value_list)
@@ -157,7 +161,7 @@ def display_extracted_details(details, title="Extracted Resume Details"):
     """
     Displays the extracted resume details in a formatted way.
     """
-    st.subheader(f"📋 {title}:")
+    st.subheader(f"� {title}:")
     for key, value in details.items():
         st.markdown(f"**{key}:**") # Always display the key as a header
         if key in ["Profile", "Professional Experience", "Education", "Projects", "Position of Responsibility"]:
@@ -169,8 +173,14 @@ def display_extracted_details(details, title="Extracted Resume Details"):
             else:
                 st.markdown(value) # Display "Not found" if no content
         else:
-            # For Name, Email, Phone, Skills, display directly
-            st.markdown(value)
+            # For Name, Email, Phone, display directly. For Skills, join the list.
+            if key == "Skills":
+                if value != "Not found":
+                    st.markdown(", ".join(value)) # Join list to string for display
+                else:
+                    st.markdown(value)
+            else:
+                st.markdown(value)
 
 
 def calculate_resume_score(details):
@@ -189,7 +199,8 @@ def calculate_resume_score(details):
     sections_found = 0
     sections_to_check = ["Profile", "Professional Experience", "Education", "Skills", "Projects", "Position of Responsibility"]
     for section in sections_to_check:
-        if details.get(section) != "Not found" and details.get(section).strip() != "":
+        # Check if the value is not "Not found" and is not an empty string/list
+        if details.get(section) != "Not found" and (isinstance(details.get(section), list) and details.get(section)) or (isinstance(details.get(section), str) and details.get(section).strip() != ""):
             sections_found += 1
     score += (sections_found / len(sections_to_check)) * MAX_SECTIONS_SCORE
 
@@ -204,7 +215,8 @@ def calculate_resume_score(details):
         score += 1
 
     # Criteria 3: Number of Skills (max 2 points)
-    skills_count = len(details.get("Skills", "").split(',')) if details.get("Skills") != "Not found" else 0
+    # Now details["Skills"] is a list
+    skills_count = len(details.get("Skills", [])) if details.get("Skills") != "Not found" else 0
     # Simple scaling: 0-5 skills = 0, 6-10 skills = 1, 11+ skills = 2
     if skills_count >= 11:
         score += MAX_SKILLS_SCORE
@@ -240,7 +252,7 @@ def compare_resumes(details1, details2):
 
     # Specific categories for side-by-side comparison
     comparison_categories_detailed = {
-        "Skills": lambda d: sorted(list(set(s.strip() for s in d.get("Skills", "").split(', ') if s.strip() and s.strip() != "Not found"))),
+        "Skills": lambda d: d.get("Skills", []), # Now it's already a list
         "Professional Experience": lambda d: [line.strip() for line in d.get("Professional Experience", "").split('\n') if line.strip()],
         "Projects": lambda d: [line.strip() for line in d.get("Projects", "").split('\n') if line.strip()],
         "Position of Responsibility": lambda d: [line.strip() for line in d.get("Position of Responsibility", "").split('\n') if line.strip()]
