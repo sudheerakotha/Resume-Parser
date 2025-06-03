@@ -235,70 +235,40 @@ def compare_resumes(details1, details2):
 
     # Specific categories for side-by-side comparison
     comparison_categories_detailed = {
-        "Skills": lambda d: set(s.strip() for s in d.get("Skills", "").split(', ') if s.strip() and s.strip() != "Not found"),
+        "Skills": lambda d: sorted(list(set(s.strip() for s in d.get("Skills", "").split(', ') if s.strip() and s.strip() != "Not found"))),
         "Professional Experience": lambda d: [line.strip() for line in d.get("Professional Experience", "").split('\n') if line.strip()],
         "Projects": lambda d: [line.strip() for line in d.get("Projects", "").split('\n') if line.strip()],
         "Position of Responsibility": lambda d: [line.strip() for line in d.get("Position of Responsibility", "").split('\n') if line.strip()]
     }
 
     # Create columns for the comparison table
-    # Using st.columns within the loop for each row to ensure proper alignment
     for category_name, get_items_func in comparison_categories_detailed.items():
         items1 = get_items_func(details1)
         items2 = get_items_func(details2)
 
         st.markdown(f"**{category_name}:**") # Category header above the comparison rows
 
-        if category_name == "Skills":
-            all_unique_items = sorted(list(items1.union(items2)))
-            if not all_unique_items:
-                col_cat, col_res1, col_res2 = st.columns([1, 4, 4])
-                with col_cat:
-                    st.markdown("") # Empty for alignment
-                with col_res1:
-                    st.markdown("-")
-                with col_res2:
-                    st.markdown("-")
-            else:
-                for item in all_unique_items:
-                    col_cat, col_res1, col_res2 = st.columns([1, 4, 4])
-                    with col_cat:
-                        st.markdown("") # Empty for alignment
-                    with col_res1:
-                        st.markdown(f"- {item}" if item in items1 else "-")
-                    with col_res2:
-                        st.markdown(f"- {item}" if item in items2 else "-")
-        else: # For Professional Experience, Projects, Position of Responsibility
-            # Determine the maximum number of bullet points to display
-            max_lines = max(len(items1), len(items2))
-            
-            if max_lines == 0: # Handle case where both are empty
-                col_cat, col_res1, col_res2 = st.columns([1, 4, 4])
-                with col_cat:
-                    st.markdown("") # Empty for alignment
-                with col_res1:
-                    st.markdown("-")
-                with col_res2:
-                    st.markdown("-")
-            else:
-                # Pad the shorter list with empty strings for alignment
-                padded_items1 = items1 + [''] * (max_lines - len(items1))
-                padded_items2 = items2 + [''] * (max_lines - len(items2))
+        # Determine the maximum number of bullet points to display for proper alignment
+        max_lines = max(len(items1), len(items2))
+        
+        # Pad the shorter list with placeholder for alignment
+        padded_items1 = items1 + [''] * (max_lines - len(items1))
+        padded_items2 = items2 + [''] * (max_lines - len(items2))
 
-                for i in range(max_lines):
-                    col_cat, col_res1, col_res2 = st.columns([1, 4, 4])
-                    with col_cat:
-                        st.markdown("") # Empty for alignment
-                    with col_res1:
-                        if padded_items1[i]:
-                            st.markdown(f"- {padded_items1[i]}")
-                        else:
-                            st.markdown("-") # Indicate absence with a hyphen
-                    with col_res2:
-                        if padded_items2[i]:
-                            st.markdown(f"- {padded_items2[i]}")
-                        else:
-                            st.markdown("-") # Indicate absence with a hyphen
+        for i in range(max_lines):
+            col_cat, col_res1, col_res2 = st.columns([1, 4, 4])
+            with col_cat:
+                st.markdown("") # Empty for alignment
+            with col_res1:
+                if padded_items1[i]:
+                    st.markdown(f"- {padded_items1[i]}")
+                else:
+                    st.markdown("-") # Indicate absence with a hyphen
+            with col_res2:
+                if padded_items2[i]:
+                    st.markdown(f"- {padded_items2[i]}")
+                else:
+                    st.markdown("-") # Indicate absence with a hyphen
         
         st.markdown("---") # Separator for each category
 
