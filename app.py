@@ -177,7 +177,18 @@ if uploaded_file is not None:
 
     # Display the extracted details in a formatted way
     for key, value in details.items():
-        st.markdown(f"**{key}:** {value}")
+        st.markdown(f"**{key}:**") # Always display the key as a header
+        if key in ["Profile", "Professional Experience", "Education", "Projects", "Position of Responsibility"]:
+            # For these sections, split by newline and display as bullet points
+            if value != "Not found":
+                for line in value.split('\n'):
+                    if line.strip(): # Only display non-empty lines
+                        st.markdown(f"- {line.strip()}")
+            else:
+                st.markdown(value) # Display "Not found" if no content
+        else:
+            # For Name, Email, Phone, Skills, display directly
+            st.markdown(value)
 
     st.markdown("---")
-    st.info("You can upload another resume to analyze again.")
+    st.info("You can upload another resume to re-analyze.")
