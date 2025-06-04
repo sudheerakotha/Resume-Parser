@@ -314,7 +314,7 @@ def compare_resumes(details1, details2):
 # ----------------------------
 
 st.set_page_config(page_title="Resume Parser & Comparer", layout="wide")
-st.title("📄 Resume Analyzer")
+st.title("📄 ResumeIQ: Resume Parser and Analyser")
 st.write("Upload resumes to extract key information or compare them side-by-side.")
 
 # Sidebar for navigation
